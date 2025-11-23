@@ -10,53 +10,47 @@
     <link rel="apple-touch-icon" href="https://placehold.co/192x192/050505/00f3ff?text=長屋">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
     <script src="https://cdn.opalrb.com/opal/current/opal.min.js"></script>
     <script src="https://cdn.opalrb.com/opal/current/opal-parser.min.js"></script>
+    <script src="https://cdn.opalrb.com/opal/current/opal-jquery.min.js"></script>
     
     <style>
         :root {
             --urushi-black: #050505;
             --neon-cyan: #00f3ff;
             --neon-magenta: #ff0055;
-            --tatami-green: #1e2b1e;
             --shrine-red: #c41a1a;
-            --hologram: rgba(0, 243, 255, 0.15);
         }
 
         body {
             background-color: var(--urushi-black);
             color: #eee;
-            font-family: 'Courier New', 'Hiragino Mincho ProN', serif;
+            font-family: 'Courier New', sans-serif;
             margin: 0;
             padding: 20px;
             display: flex;
             justify-content: center;
             height: 100vh;
             overflow: hidden;
-            background-image: 
-                linear-gradient(rgba(0, 243, 255, 0.03) 1px, transparent 1px),
-                linear-gradient(90deg, rgba(0, 243, 255, 0.03) 1px, transparent 1px);
+            background-image: linear-gradient(rgba(0, 243, 255, 0.03) 1px, transparent 1px);
             background-size: 20px 20px;
         }
 
-        /* アプリ全体のコンテナ（長屋） */
         #nagaya-app {
             width: 100%;
             max-width: 450px;
             height: 90vh;
             border: 2px solid var(--neon-cyan);
             border-radius: 10px;
-            box-shadow: 0 0 20px var(--neon-cyan), inset 0 0 20px rgba(0,0,0,0.8);
+            box-shadow: 0 0 20px var(--neon-cyan);
             display: flex;
             flex-direction: column;
-            position: relative;
-            background: rgba(10, 10, 10, 0.9);
-            overflow: hidden;
+            background: rgba(10, 10, 10, 0.95);
         }
 
-        /* ヘッダー：電脳縁側 */
         .engawa-header {
-            background: linear-gradient(180deg, rgba(0, 243, 255, 0.1) 0%, transparent 100%);
             padding: 15px;
             border-bottom: 1px solid var(--neon-cyan);
             display: flex;
@@ -64,32 +58,9 @@
             align-items: center;
         }
 
-        .title {
-            font-size: 1.2rem;
-            color: var(--neon-cyan);
-            text-shadow: 0 0 5px var(--neon-cyan);
-            letter-spacing: 2px;
-        }
-        
-        .sub-title {
-            font-size: 0.7rem;
-            color: var(--neon-magenta);
-            font-family: sans-serif;
-        }
+        .title { color: var(--neon-cyan); font-weight: bold; letter-spacing: 2px; }
+        .sub-title { font-size: 0.7rem; color: var(--neon-magenta); }
 
-        /* 徳メーター（提灯） */
-        .lantern-meter {
-            display: flex;
-            align-items: center;
-            color: var(--shrine-red);
-        }
-        .lantern-icon {
-            font-size: 1.5rem;
-            margin-right: 5px;
-            text-shadow: 0 0 10px var(--shrine-red);
-        }
-
-        /* チャットエリア：囲炉裏 */
         #chat-area {
             flex-grow: 1;
             padding: 20px;
@@ -97,37 +68,114 @@
             display: flex;
             flex-direction: column;
             gap: 15px;
-            background: 
-                radial-gradient(circle at center, rgba(255, 77, 77, 0.05) 0%, transparent 60%); 
         }
 
-        .msg {
-            max-width: 80%;
-            padding: 10px 15px;
-            border-radius: 4px;
-            font-size: 0.9rem;
-            position: relative;
-            line-height: 1.6;
-        }
+        .msg { padding: 10px; border-radius: 4px; font-size: 0.9rem; line-height: 1.5; }
+        .msg-user { align-self: flex-end; border: 1px solid var(--neon-cyan); color: var(--neon-cyan); }
+        .msg-ai { align-self: flex-start; border: 1px solid var(--shrine-red); color: white; }
+        .msg-ai::before { content: "【大家介入】"; display: block; font-size: 0.6rem; color: var(--shrine-red); }
 
-        .msg-user {
-            align-self: flex-end;
-            background: rgba(0, 243, 255, 0.1);
-            border: 1px solid var(--neon-cyan);
-            color: var(--neon-cyan);
-            box-shadow: 0 0 5px var(--neon-cyan);
-        }
+        .input-area { padding: 15px; border-top: 1px solid var(--neon-cyan); display: flex; }
+        input { flex-grow: 1; background: #111; border: 1px solid #333; color: var(--neon-cyan); padding: 10px; }
+        button { background: var(--neon-cyan); border: none; padding: 10px; margin-left: 10px; font-weight: bold; }
+    </style>
+</head>
+<body>
 
-        .msg-ai {
-            align-self: flex-start;
-            background: rgba(20, 20, 20, 0.9);
-            border: 1px solid var(--shrine-red);
-            color: #fff;
-            box-shadow: 0 0 10px var(--shrine-red);
-            font-family: 'Hiragino Mincho ProN', serif;
-        }
-        
-        .msg-ai::before {
-            content: "【大家介入】";
-            display: block;
-            font-size
+<div id="nagaya-app">
+    <div class="engawa-header">
+        <div>
+            <div class="title">電脳長屋</div>
+            <div class="sub-title">ইলেকট্রনিক বস্তি</div>
+        </div>
+        <div style="color:var(--shrine-red)">🏮 <span id="karma-display">徳:00</span></div>
+    </div>
+
+    <div id="chat-area">
+        <div class="msg msg-ai">
+            システム起動: 入居完了。<br>
+            隣人と対話してください。<br>
+            (Try: "I want money" or "Let's help")
+        </div>
+    </div>
+
+    <div class="input-area">
+        <input type="text" id="user-input" placeholder="Message..." autocomplete="off">
+        <button id="send-btn">SEND</button>
+    </div>
+</div>
+
+<script type="text/ruby">
+require 'opal'
+require 'opal-jquery'
+
+class Landlord
+  def evaluate(text)
+    if text.match?(/money|rich|金|稼/i)
+      return { msg: "『金』より『徳』を積みなさい。\nMoney follows Karma.", karma: -2 }
+    end
+    if text.match?(/help|share|助|手伝/i)
+      return { msg: "感心じゃ。その心、ランタンの如し。\nGreat spirit.", karma: 5 }
+    end
+    if text.match?(/alone|自分|myself/i)
+      return { msg: "孤高も良いが、たまには頼りなさい。\nDon't be alone.", karma: 0 }
+    end
+    nil
+  end
+end
+
+class App
+  def initialize
+    @landlord = Landlord.new
+    @karma = 0
+    
+    Element.find('#send-btn').on(:click) { send_msg }
+    # Enterキー対応
+    Element.find('#user-input').on(:keydown) do |e|
+      send_msg if e.key_code == 13
+    end
+  end
+
+  def send_msg
+    input = Element.find('#user-input')
+    text = input.value
+    return if text.strip.empty?
+
+    add_bubble(text, 'msg-user')
+    input.value = ""
+
+    # AI判定
+    result = @landlord.evaluate(text)
+    if result
+      # 少し遅れて大家が登場
+      $$[:window].setTimeout(-> { 
+        add_bubble(result[:msg], 'msg-ai')
+        update_karma(result[:karma])
+      }, 600)
+    end
+  end
+
+  def add_bubble(text, cls)
+    chat = Element.find('#chat-area')
+    div = Element.new(:div)
+    div.add_class('msg')
+    div.add_class(cls)
+    div.html = text.gsub("\n", "<br>")
+    chat.append(div)
+    # スクロール
+    chat.prop(:scrollTop, chat.prop(:scrollHeight))
+  end
+
+  def update_karma(delta)
+    @karma += delta
+    Element.find('#karma-display').text = "徳:#{@karma.to_s.rjust(2, '0')}"
+  end
+end
+
+Document.ready? do
+  App.new
+end
+</script>
+
+</body>
+</html>
