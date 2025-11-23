@@ -11,10 +11,8 @@
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 
-    <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
     <script src="https://cdn.opalrb.com/opal/current/opal.min.js"></script>
     <script src="https://cdn.opalrb.com/opal/current/opal-parser.min.js"></script>
-    <script src="https://cdn.opalrb.com/opal/current/opal-jquery.min.js"></script>
     
     <style>
         :root {
@@ -23,7 +21,6 @@
             --neon-magenta: #ff0055;
             --shrine-red: #c41a1a;
         }
-
         body {
             background-color: var(--urushi-black);
             color: #eee;
@@ -37,7 +34,6 @@
             background-image: linear-gradient(rgba(0, 243, 255, 0.03) 1px, transparent 1px);
             background-size: 20px 20px;
         }
-
         #nagaya-app {
             width: 100%;
             max-width: 450px;
@@ -49,7 +45,6 @@
             flex-direction: column;
             background: rgba(10, 10, 10, 0.95);
         }
-
         .engawa-header {
             padding: 15px;
             border-bottom: 1px solid var(--neon-cyan);
@@ -57,10 +52,8 @@
             justify-content: space-between;
             align-items: center;
         }
-
         .title { color: var(--neon-cyan); font-weight: bold; letter-spacing: 2px; }
         .sub-title { font-size: 0.7rem; color: var(--neon-magenta); }
-
         #chat-area {
             flex-grow: 1;
             padding: 20px;
@@ -69,12 +62,10 @@
             flex-direction: column;
             gap: 15px;
         }
-
         .msg { padding: 10px; border-radius: 4px; font-size: 0.9rem; line-height: 1.5; }
         .msg-user { align-self: flex-end; border: 1px solid var(--neon-cyan); color: var(--neon-cyan); }
         .msg-ai { align-self: flex-start; border: 1px solid var(--shrine-red); color: white; }
         .msg-ai::before { content: "【大家介入】"; display: block; font-size: 0.6rem; color: var(--shrine-red); }
-
         .input-area { padding: 15px; border-top: 1px solid var(--neon-cyan); display: flex; }
         input { flex-grow: 1; background: #111; border: 1px solid #333; color: var(--neon-cyan); padding: 10px; }
         button { background: var(--neon-cyan); border: none; padding: 10px; margin-left: 10px; font-weight: bold; }
@@ -93,9 +84,9 @@
 
     <div id="chat-area">
         <div class="msg msg-ai">
-            システム起動: 入居完了。<br>
-            隣人と対話してください。<br>
-            (Try: "I want money" or "Let's help")
+            システム起動...<br>
+            入居完了。<br>
+            (Try: "I want money" or "help")
         </div>
     </div>
 
@@ -106,8 +97,11 @@
 </div>
 
 <script type="text/ruby">
-require 'opal'
-require 'opal-jquery'
+require 'native'
+
+# ブラウザの機能をRubyで使うための準備
+$window = $$
+$document = $window.document
 
 class Landlord
   def evaluate(text)
@@ -129,26 +123,40 @@ class App
     @landlord = Landlord.new
     @karma = 0
     
-    Element.find('#send-btn').on(:click) { send_msg }
-    # Enterキー対応
-    Element.find('#user-input').on(:keydown) do |e|
-      send_msg if e.key_code == 13
+    # UI要素を取得（ここをNative方式に変更）
+    @input_el = $document.getElementById('user-input')
+    @chat_el = $document.getElementById('chat-area')
+    @karma_el = $document.getElementById('karma-display')
+    btn_el = $document.getElementById('send-btn')
+
+    # クリックイベント
+    btn_el.addEventListener('click') do
+      send_msg
     end
+
+    # エンターキーイベント
+    @input_el.addEventListener('keydown') do |e|
+      # NativeイベントのkeyCodeを取得
+      if e[:keyCode].to_i == 13
+        send_msg
+      end
+    end
+    
+    puts "App Initialized"
   end
 
   def send_msg
-    input = Element.find('#user-input')
-    text = input.value
-    return if text.strip.empty?
+    text = @input_el.value
+    return if text.to_s.strip.empty?
 
     add_bubble(text, 'msg-user')
-    input.value = ""
+    @input_el.value = ""
 
     # AI判定
     result = @landlord.evaluate(text)
     if result
-      # 少し遅れて大家が登場
-      $$[:window].setTimeout(-> { 
+      # 遅延実行 (Native setTimeout)
+      $window.setTimeout(-> { 
         add_bubble(result[:msg], 'msg-ai')
         update_karma(result[:karma])
       }, 600)
@@ -156,23 +164,22 @@ class App
   end
 
   def add_bubble(text, cls)
-    chat = Element.find('#chat-area')
-    div = Element.new(:div)
-    div.add_class('msg')
-    div.add_class(cls)
-    div.html = text.gsub("\n", "<br>")
-    chat.append(div)
-    # スクロール
-    chat.prop(:scrollTop, chat.prop(:scrollHeight))
+    div = $document.createElement('div')
+    div.className = "msg #{cls}"
+    div.innerHTML = text.gsub("\n", "<br>")
+    @chat_el.appendChild(div)
+    # 最下部へスクロール
+    @chat_el.scrollTop = @chat_el.scrollHeight
   end
 
   def update_karma(delta)
     @karma += delta
-    Element.find('#karma-display').text = "徳:#{@karma.to_s.rjust(2, '0')}"
+    @karma_el.innerText = "徳:#{@karma.to_s.rjust(2, '0')}"
   end
 end
 
-Document.ready? do
+# ページの読み込み完了を待って起動
+$document.addEventListener('DOMContentLoaded') do
   App.new
 end
 </script>
