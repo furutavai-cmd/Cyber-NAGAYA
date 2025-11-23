@@ -1,0 +1,333 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NAGAYA: Cyber-Connect 2099</title>
+    <script src="https://cdn.opalrb.com/opal/current/opal.min.js"></script>
+    <script src="https://cdn.opalrb.com/opal/current/opal-parser.min.js"></script>
+    
+    <style>
+        :root {
+            --urushi-black: #050505;
+            --neon-cyan: #00f3ff;
+            --neon-magenta: #ff0055;
+            --tatami-green: #1e2b1e;
+            --shrine-red: #c41a1a;
+            --hologram: rgba(0, 243, 255, 0.15);
+        }
+
+        body {
+            background-color: var(--urushi-black);
+            color: #eee;
+            font-family: 'Courier New', 'Hiragino Mincho ProN', serif;
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+            height: 100vh;
+            overflow: hidden;
+            background-image: 
+                linear-gradient(rgba(0, 243, 255, 0.03) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(0, 243, 255, 0.03) 1px, transparent 1px);
+            background-size: 20px 20px;
+        }
+
+        /* アプリ全体のコンテナ（長屋） */
+        #nagaya-app {
+            width: 100%;
+            max-width: 450px;
+            height: 90vh;
+            border: 2px solid var(--neon-cyan);
+            border-radius: 10px;
+            box-shadow: 0 0 20px var(--neon-cyan), inset 0 0 20px rgba(0,0,0,0.8);
+            display: flex;
+            flex-direction: column;
+            position: relative;
+            background: rgba(10, 10, 10, 0.9);
+            overflow: hidden;
+        }
+
+        /* ヘッダー：電脳縁側 */
+        .engawa-header {
+            background: linear-gradient(180deg, rgba(0, 243, 255, 0.1) 0%, transparent 100%);
+            padding: 15px;
+            border-bottom: 1px solid var(--neon-cyan);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .title {
+            font-size: 1.2rem;
+            color: var(--neon-cyan);
+            text-shadow: 0 0 5px var(--neon-cyan);
+            letter-spacing: 2px;
+        }
+        
+        .sub-title {
+            font-size: 0.7rem;
+            color: var(--neon-magenta);
+            font-family: sans-serif;
+        }
+
+        /* 徳メーター（提灯） */
+        .lantern-meter {
+            display: flex;
+            align-items: center;
+            color: var(--shrine-red);
+        }
+        .lantern-icon {
+            font-size: 1.5rem;
+            margin-right: 5px;
+            text-shadow: 0 0 10px var(--shrine-red);
+        }
+
+        /* チャットエリア：囲炉裏 */
+        #chat-area {
+            flex-grow: 1;
+            padding: 20px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            background: 
+                radial-gradient(circle at center, rgba(255, 77, 77, 0.05) 0%, transparent 60%); 
+        }
+
+        .msg {
+            max-width: 80%;
+            padding: 10px 15px;
+            border-radius: 4px;
+            font-size: 0.9rem;
+            position: relative;
+            line-height: 1.6;
+        }
+
+        .msg-user {
+            align-self: flex-end;
+            background: rgba(0, 243, 255, 0.1);
+            border: 1px solid var(--neon-cyan);
+            color: var(--neon-cyan);
+            box-shadow: 0 0 5px var(--neon-cyan);
+        }
+
+        .msg-ai {
+            align-self: flex-start;
+            background: rgba(20, 20, 20, 0.9);
+            border: 1px solid var(--shrine-red);
+            color: #fff;
+            box-shadow: 0 0 10px var(--shrine-red);
+            font-family: 'Hiragino Mincho ProN', serif;
+        }
+        
+        .msg-ai::before {
+            content: "【大家介入】";
+            display: block;
+            font-size: 0.6rem;
+            color: var(--shrine-red);
+            margin-bottom: 5px;
+        }
+
+        /* 入力エリア */
+        .input-area {
+            padding: 15px;
+            border-top: 1px solid var(--neon-cyan);
+            display: flex;
+            background: #000;
+        }
+
+        input {
+            flex-grow: 1;
+            background: #111;
+            border: 1px solid #333;
+            color: var(--neon-cyan);
+            padding: 10px;
+            font-family: 'Courier New', monospace;
+            outline: none;
+        }
+        input:focus {
+            border-color: var(--neon-cyan);
+        }
+
+        button {
+            background: var(--neon-cyan);
+            color: #000;
+            border: none;
+            padding: 10px 20px;
+            margin-left: 10px;
+            font-weight: bold;
+            cursor: pointer;
+            text-transform: uppercase;
+        }
+        
+        button:hover {
+            background: #fff;
+            box-shadow: 0 0 10px var(--neon-cyan);
+        }
+
+        /* スキャンラインエフェクト */
+        .scanlines {
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: linear-gradient(to bottom, rgba(255,255,255,0), rgba(255,255,255,0) 50%, rgba(0,0,0,0.2) 50%, rgba(0,0,0,0.2));
+            background-size: 100% 4px;
+            pointer-events: none;
+            z-index: 10;
+        }
+    </style>
+</head>
+<body>
+
+<div id="nagaya-app">
+    <div class="scanlines"></div>
+    
+    <div class="engawa-header">
+        <div>
+            <div class="title">電脳長屋</div>
+            <div class="sub-title">NAGAYA PROTOCOL v.2.0</div>
+            <div class="sub-title" style="color: #888;">ইলেকট্রনিক বস্তি (Electronic Bosti)</div>
+        </div>
+        <div class="lantern-meter">
+            <span class="lantern-icon">🏮</span>
+            <span id="karma-display">徳: 00</span>
+        </div>
+    </div>
+
+    <div id="chat-area">
+        <div class="msg msg-ai" style="border-color: #555; color: #aaa; box-shadow:none;">
+            システム: <br>
+            入居完了。あなたの属性は「一匹狼(Lone Wolf)」です。<br>
+            生存のため、隣人と対話してください。<br>
+            (Try typing: "I want to make money" or "Let's help each other")
+        </div>
+    </div>
+
+    <div class="input-area">
+        <input type="text" id="user-input" placeholder="メッセージを入力 / Message..." autocomplete="off">
+        <button id="send-btn">SEND</button>
+    </div>
+</div>
+
+<script type="text/ruby">
+require 'native'
+
+# 1. ユーザーの魂定義
+class User
+  attr_accessor :karma
+  attr_reader :name, :type
+
+  def initialize(name, type)
+    @name = name
+    @type = type # :wolf, :caregiver, :fighter
+    @karma = 0
+  end
+end
+
+# 2. AI大家（古田）の思考ロジック
+class Landlord
+  def initialize
+    @name = "古田 (AI)"
+  end
+
+  # メッセージを解析して介入を決定する
+  def evaluate(user, text)
+    # キーワードマッチング（実際はここでLLM等を呼ぶ）
+    
+    # CASE A: 金、利益、効率への執着
+    if text.match?(/金|稼|儲|money|profit|rich/i)
+      return {
+        reaction: :scold,
+        message: "『#{user.name}』よ、金は血液だが、目的ではない。\n隣人と『知恵』を交換するほうが、結果的に富むぞ。",
+        karma_delta: -2
+      }
+    end
+
+    # CASE B: 協力、助け合い、共有
+    if text.match?(/助|手伝|一緒|help|share|together|support/i)
+      return {
+        reaction: :praise,
+        message: "善き心がけじゃ。\nその言葉は、電脳空間の闇を照らすランタンとなる。",
+        karma_delta: +5
+      }
+    end
+
+    # CASE C: 孤独、拒絶（一匹狼タイプへの干渉）
+    if user.type == :wolf && text.match?(/一人|自分|alone|myself|busy/i)
+      return {
+        reaction: :nudge,
+        message: "孤高も美しいが、この長屋では『貸し借り』もまた芸のうちじゃ。\n無理せず誰かに頼りなさい。",
+        karma_delta: 0
+      }
+    end
+
+    # デフォルト: 介入なし
+    return nil
+  end
+end
+
+# 3. アプリケーション制御
+class App
+  def initialize
+    @user = User.new("User1", :wolf) # デフォルトで「一匹狼」設定
+    @landlord = Landlord.new
+    
+    # DOM要素の取得
+    @input = $document.at_css('#user-input')
+    @send_btn = $document.at_css('#send-btn')
+    @chat_area = $document.at_css('#chat-area')
+    @karma_display = $document.at_css('#karma-display')
+
+    # イベントリスナー設定
+    @send_btn.on(:click) { send_message }
+    @input.on(:keydown) { |e| send_message if e.key == 'Enter' }
+  end
+
+  def send_message
+    text = @input.value
+    return if text.strip.empty?
+
+    # 1. ユーザーのメッセージを表示
+    add_bubble(text, 'msg-user')
+    @input.value = ""
+
+    # 2. 大家AIの判定 (少し遅延させてリアリティを出す)
+    $window.set_timeout(600) do
+      result = @landlord.evaluate(@user, text)
+      
+      if result
+        # 徳ポイント更新
+        update_karma(result[:karma_delta])
+        # 大家のホログラム介入表示
+        add_bubble(result[:message], 'msg-ai')
+      end
+    end
+  end
+
+  def add_bubble(text, css_class)
+    bubble = $document.create_element('div')
+    bubble.add_class('msg')
+    bubble.add_class(css_class)
+    # 改行コードを<br>に変換
+    bubble.inner_html = text.gsub("\n", "<br>")
+    
+    @chat_area.append(bubble)
+    # スクロール最下部へ
+    @chat_area.scroll_top = @chat_area.scroll_height
+  end
+
+  def update_karma(delta)
+    @user.karma += delta
+    # 演出: ポイントが増えたら赤く光らせるなどの処理が可能
+    @karma_display.text = "徳: #{@user.karma.to_s.rjust(2, '0')}"
+  end
+end
+
+# アプリ起動
+$document.ready do
+  App.new
+end
+</script>
+
+</body>
+</html>
